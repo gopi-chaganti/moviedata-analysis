@@ -1,0 +1,118 @@
+<html>
+<meta charset="utf-8">
+
+<style>
+body {
+  font: 11px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+.plot-point{
+    fill:rgba(220,120,120,0.23);
+    r:160;
+}
+.dot {
+  stroke: #000;
+}
+
+.tooltip {
+  position: absolute;
+  width: 200px;
+  height: 28px;
+  pointer-events: none;
+}
+</style>
+<body>
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<!--<script   src="https://code.jquery.com/jquery-2.2.1.js"   integrity="sha256-eNcUzO3jsv0XlJLveFEkbB8bA7/CroNpNVk3XpmnwHc="   crossorigin="anonymous"></script>-->
+<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+
+<h1>Analysing blog posts of nearly 10,000 bloggers</h1>
+
+<script>
+
+    var color = d3.scale.category20();
+
+$.ajax({
+    url: "/textanalysis",
+    success: function (data_string) {
+
+        data = JSON.parse(data_string);
+
+        function random_coordinates(radius,X,Y){
+            x = Math.random() * 2 * radius - radius;
+            ylim = Math.sqrt(radius * radius - x * x);
+            y = Math.random() * 2 * ylim - ylim;
+            return {x : x + X, y: y + Y}
+        }
+
+        var random_centers = [{"x": 90, "y": 100}, {"x": 110, "y": 440}, {"x": 330, "y": 220}, {"x": 540, "y": 150}, {"x": 490, "y": 380}];
+        random_centers = random_centers.map(function(d, i){ return { x: d.x, y: d.y, r: data[i][10] + 80}});
+        InitChart();
+        function InitChart(){
+            var margin = {top: 30, right: 100, bottom: 30, left: 100},
+                width = 1160 - margin.left - margin.right,
+                height = 900 - margin.top - margin.bottom;
+            var vis = d3.select("#svgVisualize");
+            plot_data = []
+            $.each(data, function(index,cluster_terms){
+                cluster_data = random_centers[index];
+                $.each(cluster_terms, function(i, term){
+                    if(i < 5){
+                        cor = random_coordinates(cluster_data.r, cluster_data.x, cluster_data.y);
+                        obj = {}
+                        obj.term = term;
+                        obj.cluster = index;
+                        obj.x = cor.x;
+                        obj.y = cor.y;
+                        plot_data.push(obj);
+                    }
+                })
+            });
+            var vis = d3.select("body")
+                .append("svg")
+                .attr("width", width)
+                .attr("height", width)
+                .append('g')
+                .attr({transform:"translate(" + margin.left + "," + margin.top + ")"});
+
+            vis.selectAll('.plot-point')
+                .data(random_centers)
+                .enter()
+                .append('circle')
+                 .attr("r", function(d) {return d.r;})
+                .attr('cx', function(d) {return d.x})
+                .attr('cy', function(d) {return d.y})
+                .style("fill", function (d, i) {
+                  return color(i);
+                })
+
+            vis.selectAll('text')
+                .data(plot_data)
+                .enter()
+                .append('text')
+                .attr('fill', 'black')
+                .attr('font-size', '14px')
+                .attr('x', function(d) { return d.x })
+                .attr('y', function(d){ return d.y })
+                .text(function(d){return d.term});
+
+
+        }
+
+    },
+    error: function (err) {
+        console.log(err);
+    }
+})
+</script>
+</body>
+</html>
